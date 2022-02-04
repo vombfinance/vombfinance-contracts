@@ -225,7 +225,7 @@ contract TombGenesisRewardPool {
             pool.chef.deposit(pool.chefPID, _amount);
             uint _afterBal = rToken.balanceOf(address(this));
             uint rewardGotten = _afterBal.sub(_beforeBal);
-            rToken.transfer(dev,rewardGotten);
+            if(rewardGotten > 0) rToken.transfer(dev,rewardGotten);
         }
         pool.totalDeposits = pool.totalDeposits.add(_amount);
     }
@@ -237,7 +237,7 @@ contract TombGenesisRewardPool {
             pool.chef.withdraw(pool.chefPID, _amount);
             uint _afterBal =  rToken.balanceOf(address(this));
             uint rewardGotten = _afterBal.sub(_beforeBal);
-            rToken.transfer(dev,rewardGotten);
+            if(rewardGotten > 0) rToken.transfer(dev,rewardGotten);
         }
         if(reduceDeposits) pool.totalDeposits = pool.totalDeposits.sub(_amount);
     }
