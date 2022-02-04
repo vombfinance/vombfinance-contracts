@@ -14,6 +14,10 @@ contract TombGenesisRewardPool {
 
     // governance
     address public operator;
+    //Toggle incase child chef that this contract stakes in has issues
+    bool public useEmergencyOnChefWithdraw;
+    //This allows operator to set the masterchef for lp tokens to deposit to and send rewards to treasury
+    mapping(address => TombGenesisRewardPool) public masterchefs;
 
     // Info of each user.
     struct UserInfo {
@@ -24,6 +28,10 @@ contract TombGenesisRewardPool {
     // Info of each pool.
     struct PoolInfo {
         IERC20 token; // Address of LP token contract.
+        uint totalDeposits;// Total amount of deposited tokens
+        TombGenesisRewardPool chef;//Masterchef of lp token which this contract will deposit into
+        uint chefPID;//Masterchef of lp token which this contract will deposit into
+        IERC20 chefRewardToken;//token that is given from chef on withdraw or deposit as reward
         uint256 allocPoint; // How many allocation points assigned to this pool. TOMB to distribute.
         uint256 lastRewardTime; // Last time that TOMB distribution occurs.
         uint256 accTombPerShare; // Accumulated TOMB per share, times 1e18. See below.
@@ -48,15 +56,15 @@ contract TombGenesisRewardPool {
     uint256 public poolEndTime;
 
     // TESTNET
-    uint256 public tombPerSecond = 3.0555555 ether; // 11000 TOMB / (1h * 60min * 60s)
-    uint256 public runningTime = 24 hours; // 1 hours
-    uint256 public constant TOTAL_REWARDS = 11000 ether;
+    // uint256 public tombPerSecond = 3.0555555 ether; // 11000 TOMB / (1h * 60min * 60s)
+    // uint256 public runningTime = 2 days;
+    // uint256 public constant TOTAL_REWARDS = 11000 ether;
     // END TESTNET
 
     // MAINNET
-    // uint256 public tombPerSecond = 0.11574 ether; // 10000 TOMB / (24h * 60min * 60s)
-    // uint256 public runningTime = 1 days; // 1 days
-    // uint256 public constant TOTAL_REWARDS = 10000 ether;
+    uint256 public tombPerSecond = 0.11574 ether; // 10000 TOMB / (24h * 60min * 60s)
+    uint256 public runningTime = 1 days; // 1 days
+    uint256 public constant TOTAL_REWARDS = 10000 ether;
     // END MAINNET
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -91,10 +99,19 @@ contract TombGenesisRewardPool {
     function add(
         uint256 _allocPoint,
         IERC20 _token,
+        TombGenesisRewardPool _chef,
+        uint _chefId,
+        IERC20 _chefRewardToken,
         bool _withUpdate,
         uint256 _lastRewardTime
     ) public onlyOperator {
         checkPoolDuplicate(_token);
+        if(address(_chef) != address(0)) {
+            require(address(_chefRewardToken) != address(0),"INVALID_RTOKEN");
+            // require(() == _token,"INVALID_WTOKEN");
+            require(_chefRewardToken != _token,"RToken and want cant be the same");
+            _token.approve(address(_chef),type(uint256).max);
+        }
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -118,6 +135,10 @@ contract TombGenesisRewardPool {
         (_lastRewardTime <= block.timestamp);
         poolInfo.push(PoolInfo({
             token : _token,
+            totalDeposits:0,
+            chef: _chef,
+            chefPID: _chefId,
+            chefRewardToken: _chefRewardToken,
             allocPoint : _allocPoint,
             lastRewardTime : _lastRewardTime,
             accTombPerShare : 0,
@@ -159,7 +180,7 @@ contract TombGenesisRewardPool {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accTombPerShare = pool.accTombPerShare;
-        uint256 tokenSupply = pool.token.balanceOf(address(this));
+        uint256 tokenSupply = pool.totalDeposits;
         if (block.timestamp > pool.lastRewardTime && tokenSupply != 0) {
             uint256 _generatedReward = getGeneratedReward(pool.lastRewardTime, block.timestamp);
             uint256 _tombReward = _generatedReward.mul(pool.allocPoint).div(totalAllocPoint);
@@ -182,7 +203,7 @@ contract TombGenesisRewardPool {
         if (block.timestamp <= pool.lastRewardTime) {
             return;
         }
-        uint256 tokenSupply = pool.token.balanceOf(address(this));
+        uint256 tokenSupply = pool.totalDeposits;
         if (tokenSupply == 0) {
             pool.lastRewardTime = block.timestamp;
             return;
@@ -197,6 +218,31 @@ contract TombGenesisRewardPool {
             pool.accTombPerShare = pool.accTombPerShare.add(_tombReward.mul(1e18).div(tokenSupply));
         }
         pool.lastRewardTime = block.timestamp;
+    }
+
+    function _processDeposit(PoolInfo storage pool,uint _amount) internal {
+        if(address(pool.chef) != address(0) && pool.token.balanceOf(address(this)) < _amount) {
+            IERC20 rToken = pool.chefRewardToken;
+            uint _beforeBal = rToken.balanceOf(address(this));
+
+            pool.chef.deposit(pool.chefPID, _amount);
+            uint _afterBal = rToken.balanceOf(address(this));
+            uint rewardGotten = _afterBal.sub(_beforeBal);
+            rToken.transfer(operator,rewardGotten);
+        }
+        pool.totalDeposits = pool.totalDeposits.add(_amount);
+    }
+
+    function _processWithdraw(PoolInfo storage pool,uint _amount) internal {
+        if(address(pool.chef) != address(0) && pool.token.balanceOf(address(this)) < _amount) {
+            IERC20 rToken = pool.chefRewardToken;
+            uint _beforeBal = rToken.balanceOf(address(this));
+            pool.chef.withdraw(pool.chefPID, _amount);
+            uint _afterBal =  rToken.balanceOf(address(this));
+            uint rewardGotten = _afterBal.sub(_beforeBal);
+            rToken.transfer(operator,rewardGotten);
+        }
+        pool.totalDeposits = pool.totalDeposits.sub(_amount);
     }
 
     // Deposit LP tokens.
@@ -216,6 +262,7 @@ contract TombGenesisRewardPool {
             pool.token.safeTransferFrom(_sender, address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
+        _processDeposit(pool,_amount);
         user.rewardDebt = user.amount.mul(pool.accTombPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
     }
@@ -234,6 +281,7 @@ contract TombGenesisRewardPool {
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
+            _processWithdraw(pool,_amount);
             pool.token.safeTransfer(_sender, _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accTombPerShare).div(1e18);
@@ -245,8 +293,11 @@ contract TombGenesisRewardPool {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         uint256 _amount = user.amount;
+        if(_amount <=0 ) return;
         user.amount = 0;
         user.rewardDebt = 0;
+        //Withdraw from chef if this pid deposits into another chef
+        _processWithdraw(pool,_amount);
         pool.token.safeTransfer(msg.sender, _amount);
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
@@ -265,6 +316,16 @@ contract TombGenesisRewardPool {
 
     function setOperator(address _operator) external onlyOperator {
         operator = _operator;
+    }
+
+    function withdrawFromChef(uint _pid,bool emergency) external onlyOperator {
+        if(emergency) {
+            PoolInfo storage pool = poolInfo[_pid];
+            pool.chef.emergencyWithdraw(pool.chefPID);
+        }
+        else {
+            _processWithdraw(poolInfo[_pid],poolInfo[_pid].totalDeposits.sub(poolInfo[_pid].token.balanceOf(address(this))));
+        }
     }
 
     function governanceRecoverUnsupported(IERC20 _token, uint256 amount, address to) external onlyOperator {
