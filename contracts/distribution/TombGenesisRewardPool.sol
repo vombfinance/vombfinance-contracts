@@ -15,11 +15,6 @@ contract TombGenesisRewardPool {
     // governance
     address public operator;
     address public dev;
-    //Toggle incase child chef that this contract stakes in has issues
-    bool public useEmergencyOnChefWithdraw;
-    //This allows operator to set the masterchef for lp tokens to deposit to and send rewards to treasury
-    mapping(address => TombGenesisRewardPool) public masterchefs;
-
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many tokens the user has provided.
