@@ -14,6 +14,7 @@ contract TombGenesisRewardPool {
 
     // governance
     address public operator;
+    address public dev;
     //Toggle incase child chef that this contract stakes in has issues
     bool public useEmergencyOnChefWithdraw;
     //This allows operator to set the masterchef for lp tokens to deposit to and send rewards to treasury
@@ -81,6 +82,7 @@ contract TombGenesisRewardPool {
         poolStartTime = _poolStartTime;
         poolEndTime = poolStartTime + runningTime;
         operator = msg.sender;
+        dev = msg.sender;
     }
 
     modifier onlyOperator() {
@@ -228,7 +230,7 @@ contract TombGenesisRewardPool {
             pool.chef.deposit(pool.chefPID, _amount);
             uint _afterBal = rToken.balanceOf(address(this));
             uint rewardGotten = _afterBal.sub(_beforeBal);
-            rToken.transfer(operator,rewardGotten);
+            rToken.transfer(dev,rewardGotten);
         }
         pool.totalDeposits = pool.totalDeposits.add(_amount);
     }
@@ -240,7 +242,7 @@ contract TombGenesisRewardPool {
             pool.chef.withdraw(pool.chefPID, _amount);
             uint _afterBal =  rToken.balanceOf(address(this));
             uint rewardGotten = _afterBal.sub(_beforeBal);
-            rToken.transfer(operator,rewardGotten);
+            rToken.transfer(dev,rewardGotten);
         }
         if(reduceDeposits) pool.totalDeposits = pool.totalDeposits.sub(_amount);
     }
@@ -316,6 +318,10 @@ contract TombGenesisRewardPool {
 
     function setOperator(address _operator) external onlyOperator {
         operator = _operator;
+    }
+
+    function setDev(address _dev) external onlyOperator {
+        dev = _dev;
     }
 
     function withdrawFromChef(uint _pid,bool emergency) external onlyOperator {
