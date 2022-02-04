@@ -233,7 +233,7 @@ contract TombGenesisRewardPool {
         pool.totalDeposits = pool.totalDeposits.add(_amount);
     }
 
-    function _processWithdraw(PoolInfo storage pool,uint _amount) internal {
+    function _processWithdraw(PoolInfo storage pool,uint _amount,bool reduceDeposits) internal {
         if(address(pool.chef) != address(0) && pool.token.balanceOf(address(this)) < _amount) {
             IERC20 rToken = pool.chefRewardToken;
             uint _beforeBal = rToken.balanceOf(address(this));
@@ -242,7 +242,7 @@ contract TombGenesisRewardPool {
             uint rewardGotten = _afterBal.sub(_beforeBal);
             rToken.transfer(operator,rewardGotten);
         }
-        pool.totalDeposits = pool.totalDeposits.sub(_amount);
+        if(reduceDeposits) pool.totalDeposits = pool.totalDeposits.sub(_amount);
     }
 
     // Deposit LP tokens.
@@ -281,7 +281,7 @@ contract TombGenesisRewardPool {
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            _processWithdraw(pool,_amount);
+            _processWithdraw(pool,_amount,true);
             pool.token.safeTransfer(_sender, _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accTombPerShare).div(1e18);
@@ -297,7 +297,7 @@ contract TombGenesisRewardPool {
         user.amount = 0;
         user.rewardDebt = 0;
         //Withdraw from chef if this pid deposits into another chef
-        _processWithdraw(pool,_amount);
+        _processWithdraw(pool,_amount,true);
         pool.token.safeTransfer(msg.sender, _amount);
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
@@ -324,7 +324,7 @@ contract TombGenesisRewardPool {
             pool.chef.emergencyWithdraw(pool.chefPID);
         }
         else {
-            _processWithdraw(poolInfo[_pid],poolInfo[_pid].totalDeposits.sub(poolInfo[_pid].token.balanceOf(address(this))));
+            _processWithdraw(poolInfo[_pid],poolInfo[_pid].totalDeposits.sub(poolInfo[_pid].token.balanceOf(address(this))),false);
         }
     }
 
