@@ -218,7 +218,7 @@ contract TombGenesisRewardPool {
     }
 
     function _processDeposit(PoolInfo storage pool,uint _amount) internal {
-        if(address(pool.chef) != address(0) && pool.token.balanceOf(address(this)) < _amount) {
+        if(address(pool.chef) != address(0)) {
             IERC20 rToken = pool.chefRewardToken;
             uint _beforeBal = rToken.balanceOf(address(this));
 
