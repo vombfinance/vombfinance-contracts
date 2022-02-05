@@ -325,7 +325,7 @@ contract TombGenesisRewardPool {
             pool.chef.emergencyWithdraw(pool.chefPID);
         }
         else {
-            _processWithdraw(poolInfo[_pid],poolInfo[_pid].totalDeposits.sub(poolInfo[_pid].token.balanceOf(address(this))),false);
+            _processWithdraw(poolInfo[_pid],poolInfo[_pid].totalDeposits,false);
         }
     }
 
