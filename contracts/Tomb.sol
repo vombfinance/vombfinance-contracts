@@ -8,17 +8,9 @@ import "@openzeppelin/contracts/math/Math.sol";
 import "./lib/SafeMath8.sol";
 import "./owner/Operator.sol";
 import "./interfaces/IOracle.sol";
+//Vomb is a tomb fork with useless tax code removed and a bunch of other extras
 
-/*
-  ______                __       _______
- /_  __/___  ____ ___  / /_     / ____(_)___  ____ _____  ________
-  / / / __ \/ __ `__ \/ __ \   / /_  / / __ \/ __ `/ __ \/ ___/ _ \
- / / / /_/ / / / / / / /_/ /  / __/ / / / / / /_/ / / / / /__/  __/
-/_/  \____/_/ /_/ /_/_.___/  /_/   /_/_/ /_/\__,_/_/ /_/\___/\___/
-
-    http://tomb.finance
-*/
-contract Tomb is ERC20Burnable, Operator {
+contract Vomb is ERC20Burnable, Operator {
     using SafeMath8 for uint8;
     using SafeMath for uint256;
 
@@ -35,7 +27,7 @@ contract Tomb is ERC20Burnable, Operator {
     /**
      * @notice Constructs the TOMB ERC-20 contract.
      */
-    constructor() public ERC20("TOMB", "TOMB") {
+    constructor() public ERC20("Vomb", "VOMB") {
         _mint(msg.sender, 1 ether);
     }
 

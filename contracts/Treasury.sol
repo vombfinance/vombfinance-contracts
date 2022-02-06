@@ -14,15 +14,7 @@ import "./interfaces/IBasisAsset.sol";
 import "./interfaces/IOracle.sol";
 import "./interfaces/IMasonry.sol";
 
-/*
-  ______                __       _______
- /_  __/___  ____ ___  / /_     / ____(_)___  ____ _____  ________
-  / / / __ \/ __ `__ \/ __ \   / /_  / / __ \/ __ `/ __ \/ ___/ _ \
- / / / /_/ / / / / / / /_/ /  / __/ / / / / / /_/ / / / / /__/  __/
-/_/  \____/_/ /_/ /_/_.___/  /_/   /_/_/ /_/\__,_/_/ /_/\___/\___/
 
-    http://tomb.finance
-*/
 contract Treasury is ContractGuard {
     using SafeERC20 for IERC20;
     using Address for address;
@@ -245,14 +237,12 @@ contract Treasury is ContractGuard {
         address _tbond,
         address _tshare,
         address _tombOracle,
-        address _masonry,
         uint256 _startTime
     ) public notInitialized {
         tomb = _tomb;
         tbond = _tbond;
         tshare = _tshare;
         tombOracle = _tombOracle;
-        masonry = _masonry;
         startTime = _startTime;
 
         tombPriceOne = 10**18;

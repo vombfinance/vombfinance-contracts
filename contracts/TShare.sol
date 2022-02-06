@@ -7,16 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 
 import "./owner/Operator.sol";
 
-/*
-  ______                __       _______
- /_  __/___  ____ ___  / /_     / ____(_)___  ____ _____  ________
-  / / / __ \/ __ `__ \/ __ \   / /_  / / __ \/ __ `/ __ \/ ___/ _ \
- / / / /_/ / / / / / / /_/ /  / __/ / / / / / /_/ / / / / /__/  __/
-/_/  \____/_/ /_/ /_/_.___/  /_/   /_/_/ /_/\__,_/_/ /_/\___/\___/
 
-    http://tomb.finance
-*/
-contract TShare is ERC20Burnable, Operator {
+contract Share is ERC20Burnable, Operator {
     using SafeMath for uint256;
 
     // TOTAL MAX SUPPLY = 70,000 tSHAREs
@@ -39,7 +31,7 @@ contract TShare is ERC20Burnable, Operator {
 
     bool public rewardPoolDistributed = false;
 
-    constructor(uint256 _startTime, address _communityFund, address _devFund) public ERC20("TSHARE", "TSHARE") {
+    constructor(uint256 _startTime, address _communityFund, address _devFund) public ERC20("VShare", "VSHARE") {
         _mint(msg.sender, 1 ether); // mint 1 TOMB Share for initial pools deployment
 
         startTime = _startTime;
