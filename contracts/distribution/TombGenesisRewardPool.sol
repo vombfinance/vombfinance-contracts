@@ -257,9 +257,9 @@ contract TombGenesisRewardPool {
         }
         if (_amount > 0) {
             pool.token.safeTransferFrom(_sender, address(this), _amount);
+            _processDeposit(pool,_amount);
             user.amount = user.amount.add(_amount);
         }
-        _processDeposit(pool,_amount);
         user.rewardDebt = user.amount.mul(pool.accTombPerShare).div(1e18);
         emit Deposit(_sender, _pid, _amount);
     }
